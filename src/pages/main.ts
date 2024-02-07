@@ -294,7 +294,11 @@ export class MainPage extends BaseElement {
             });
 
             // Generate labels for the x-axis representing each day of a non-leap year
-            const labels = Array.from({ length: 365 }, (_, i) => moment("0000-01-01").add(i, "days").format("MMM D"));
+            const labels = Array.from({ length: 365 }, (_, i) =>
+                moment(years[0] + "-01-01")
+                    .add(i, "days")
+                    .format("YYYY-MM-DD")
+            );
 
             createChart(this.chart, labels, datasets, "DD-MM");
         } else {
