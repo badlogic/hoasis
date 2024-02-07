@@ -1,7 +1,7 @@
 {
-    "name": "__app_name__",
-    "short_name": "__app_name__",
-    "description": "__app_description__",
+    "name": "hoassis",
+    "short_name": "hoassis",
+    "description": "Geospatialle Visualisierung von historischen Temperaturdaten aus Basis von https://data.hub.geosphere.at/dataset/spartacus-v2-1d-1km",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#000c15",

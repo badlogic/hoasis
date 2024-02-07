@@ -2,7 +2,7 @@
 
 set -e
 
-project=__app_name__
+project=hoassis
 
 printHelp () {
 	echo "Usage: control.sh <command>"
