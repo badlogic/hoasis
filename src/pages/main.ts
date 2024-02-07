@@ -54,7 +54,7 @@ const createChart = (
 ) => {
     datasets.forEach((dataset: any) => {
         dataset.pointRadius = 0;
-        dataset.borderWidth = 1;
+        if (!dataset.borderWidth) dataset.borderWidth = 1;
     });
     if ((canvas as any).__chart) {
         const chart: Chart<"line", number[], unknown> = (canvas as any).__chart;
@@ -73,6 +73,7 @@ const createChart = (
                 adapters: {
                     date: moment,
                 },
+                grid: { display: false },
                 time: {
                     unit: "day",
                     displayFormats: {
@@ -90,6 +91,15 @@ const createChart = (
                 title: {
                     text: "Temp",
                     display: true,
+                },
+            },
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    boxWidth: 30, // Makes the legend's color box narrower
+                    boxHeight: 1,
+                    // Other styling options here
                 },
             },
         },
@@ -136,6 +146,9 @@ export class MainPage extends BaseElement {
     @query("#stackYears")
     stackYears!: HTMLInputElement;
 
+    @query("#firstLastYear")
+    firstLastYear!: HTMLInputElement;
+
     @query("#minTemp")
     minTemp!: HTMLInputElement;
 
@@ -145,8 +158,8 @@ export class MainPage extends BaseElement {
     @state()
     searchResults: GeocodingResult[] = [];
 
-    startDate: Date = new Date(new Date().getTime() - 365 * 24 * 60 * 60 * 1000);
-    endDate: Date = new Date();
+    startDate = new Date(new Date().getFullYear() - 2, 0, 1);
+    endDate = new Date();
 
     map!: L.Map;
     marker?: L.Marker<any>;
@@ -242,6 +255,7 @@ export class MainPage extends BaseElement {
                 label: string;
                 data: Array<number | null>;
                 borderColor?: string;
+                borderWidth?: number;
                 fill?: boolean;
             }[] = [];
             const years = Object.keys(yearlyData).sort(); // Ensure oldest years first
@@ -250,11 +264,14 @@ export class MainPage extends BaseElement {
             years.forEach((year, index) => {
                 let opacity = (1 - baseOpacity * (years.length - index)) * 0.6 + 0.4; // Decreasing opacity for older years
                 if (index == years.length - 1) opacity = 1;
+                const isFirstOrLast = index == 0 || index == years.length - 1;
+                if (this.firstLastYear.checked && !isFirstOrLast) return;
                 if (this.minTemp.checked) {
                     datasets.push({
                         label: `Min Temp ${year}`,
                         data: yearlyData[year].minTemps,
-                        borderColor: `rgba(54, 162, 235, ${opacity})`, // Nicer Blue
+                        borderColor: index == years.length - 1 ? `rgba(54, 100, 235, 1)` : `rgba(54, 162, 235, ${opacity})`, // Nicer Blue
+                        borderWidth: index == years.length - 1 ? 2 : 1,
                         fill: false,
                     });
                 }
@@ -263,11 +280,14 @@ export class MainPage extends BaseElement {
             years.forEach((year, index) => {
                 let opacity = (1 - baseOpacity * (years.length - index)) * 0.6 + 0.4; // Decreasing opacity for older years
                 if (index == years.length - 1) opacity = 1;
+                const isFirstOrLast = index == 0 || index == years.length - 1;
+                if (this.firstLastYear.checked && !isFirstOrLast) return;
                 if (this.maxTemp.checked) {
                     datasets.push({
                         label: `Max Temp ${year}`,
                         data: yearlyData[year].maxTemps,
-                        borderColor: `rgba(255, 99, 132, ${opacity})`, // Nicer Red
+                        borderColor: index == years.length - 1 ? "rgba(255, 50, 50, 1)" : `rgba(255, 99, 132, ${opacity})`, // Nicer Red
+                        borderWidth: index == years.length - 1 ? 2 : 1,
                         fill: false,
                     });
                 }
@@ -311,7 +331,7 @@ export class MainPage extends BaseElement {
         return html`<div class="${pageContainerStyle} items-center gap-4">
             <div class="${pageContentStyle} gap-4 px-4">
                 <theme-toggle class="ml-auto mt-4"></theme-toggle>
-                <h1 class="text-center">Hoaß is</h1>
+                <h1 class="text-center -mt-4">Hoaß is'</h1>
                 ${this.error ? renderError(this.error) : ""}
                 <div class="text-center text-sm">
                     Visualisiere die Temperatur an deinem Ort über die letzten Jahre.<br />
@@ -342,7 +362,9 @@ export class MainPage extends BaseElement {
                 </div>
                 <div id="map" class="h-[30vh] rounded-md"></div>
             </div>
-            <div class="flex flex-col gap-2 justify-center items-center p-4 bg-[#efefef] dark:bg-transparent dark:border dark:border-divider rounded">
+            <div
+                class="flex flex-col gap-2 justify-center items-center mt-4 p-4 bg-[#efefef] dark:bg-transparent dark:border dark:border-divider rounded"
+            >
                 <div class="flex gap-2 items-center">
                     <input
                         id="startDate"
@@ -363,6 +385,9 @@ export class MainPage extends BaseElement {
                 <label class="flex items-center gap-1"
                     ><input id="stackYears" type="checkbox" checked @change=${() => this.renderCharts()} /> Jahre übereinander legen</label
                 >
+                <label class="flex items-center gap-1"
+                    ><input id="firstLastYear" type="checkbox" checked @change=${() => this.renderCharts()} /> Nur erstes und letztes Jahr</label
+                >
                 <div class="flex gap-2">
                     <label class="flex items-center gap-1"
                         ><input id="minTemp" type="checkbox" checked @change=${() => this.renderCharts()} /> Min. Temperatur</label
@@ -373,7 +398,14 @@ export class MainPage extends BaseElement {
                 </div>
                 ${this.isLoading ? html`<loading-spinner></loading-spinner>` : nothing}
             </div>
+            <a href="https://data.hub.geosphere.at/dataset/spartacus-v2-1d-1km" class="text-blue-400 text-center"
+                >Meteorologische Daten von GeoSphere Austria<br />Täglich aktualisiert</a
+            >
             <canvas id="chart" class="w-full flex-grow px-4" style="height: 40vh"></canvas>
+            <span class="text-xs text-center text-fg-muted mb-4"
+                >Mit Spucke und Tixo gebaut von <a href="https://twitter.com/badlogicgames" class="text-blue-400">Mario Zechner</a><br />Es werden
+                keine Daten gesammelt, nicht einmal deine IP Adresse</span
+            >
         </div>`;
     }
 }
