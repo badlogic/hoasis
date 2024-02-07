@@ -2,8 +2,8 @@ version: "3"
 services:
     web:
         environment:
-            VIRTUAL_HOST: hoassis.marioslab.io,www.hoassis.marioslab.io
-            LETSENCRYPT_HOST: hoassis.marioslab.io,www.hoassis.marioslab.io
+            VIRTUAL_HOST: hoassis.marioslab.io
+            LETSENCRYPT_HOST: hoassis.marioslab.io
             LETSENCRYPT_EMAIL: badlogicgames@gmail.com
         networks:
             - reverse_proxy
